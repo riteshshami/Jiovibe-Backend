@@ -12,3 +12,5 @@ if(process.env.NODE_ENV === "production") {
 }
 
 export const db = prisma;
+
+export const data = process.env.DATABASE_URL;
