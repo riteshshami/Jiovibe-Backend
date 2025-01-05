@@ -20,14 +20,14 @@ model Profile {
     imageUrl String @db.Text
     email String @db.Text
 
-    servers Server[]
+    hubs Hub[]
     members Member[]
 
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
 }
 
-model Server {
+model Hub {
     id String @id @default(uuid())
     name String
     imageUrl String @db.Text
@@ -57,12 +57,12 @@ model Member {
     profileId String
     profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
 
-    serverId String
-    server Server @relation(fields: [serverId], references: [id], onDelete: Cascade)
+    hubId String
+    hub Hub @relation(fields: [hubId], references: [id], onDelete: Cascade)
 
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
 
     @@index([profileId])
-    @@index([serverId])
+    @@index([hubId])
 }
