@@ -37,8 +37,8 @@ app.get('/protected', requireAuth(), (req: Request, res: Response) => {
 });
 
 // API routes
-app.use('/api/hubs', hubRoutes); 
-app.use('/api/members', memberRoutes);
+app.use('/api/hub', hubRoutes);
+app.use('/api/member', memberRoutes);
 app.use('/api/user', userRoutes);
 
 // Error handling middleware
