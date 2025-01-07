@@ -1,21 +1,13 @@
 import express from "express";
 import { requireAuth } from "@clerk/express";
-import { createHub, getAllHubs, getJoinedHubs, getOneHub, updateHub, deleteHub } from "../controllers/hub.controller";
-import { isMember } from "../middlewares/isMember";
+import { createHub } from "../controllers/hub.controllers/create-hub.controller";
 
 const router = express.Router();
 
+// Apply requireAuth middleware to all routes in this router
 router.use(requireAuth());
 
-router.post("/create-hub", createHub);
-router.get("/hubs", getAllHubs);
-
-router.use(isMember);
-
-router.get("/hub/:id", getOneHub);
-router.get("/hubs/joined", getJoinedHubs);
-router.put("/hub/:id", updateHub);
-router.delete("/hub/:id", deleteHub);
+router.post("/", createHub);
 
 
 export { router as hubRoutes };
