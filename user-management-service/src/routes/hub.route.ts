@@ -1,4 +1,4 @@
-import express from "express";
+import express, { Request, Response } from "express";
 import { requireAuth } from "@clerk/express";
 import { createHub } from "../controllers/hub.controllers/create-hub.controller";
 

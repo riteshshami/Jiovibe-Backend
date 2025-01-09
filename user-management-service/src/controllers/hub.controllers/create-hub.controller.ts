@@ -3,12 +3,13 @@ import { AppError, AppSuccess } from '../../utils/appresponse.util';
 
 import { z } from 'zod';
 import { db } from '../../config/db.config';
+import { v4 as uuid } from 'uuid';
 import { logger } from '../../utils/logger.util';
 
 import { createHubSchema } from '../../interface/hubSchema.interface';
 
-import { generateInviteCode } from '../../utils/generateInvitecode.util';
-import { INVITE_CODE_LENGTH, MAX_RETRIES } from '../../constants';
+import { MemberRole } from '@prisma/client';
+import { userProfile } from '../../services/user-profile';
 
 export const createHub = async (req: Request, res: Response): Promise<void> => {
     const startTime = Date.now();
@@ -18,19 +19,13 @@ export const createHub = async (req: Request, res: Response): Promise<void> => {
         const validatedData = createHubSchema.parse(req.body);
 
         // Check if profile exists
-        const existingProfile = await db.profile.findUnique({
-            where: { id: validatedData.profileId }
-        });
-
-        if (!existingProfile) {
-            throw new AppError('Profile not found', 404);
-        }
+        const profileId = await userProfile(validatedData.profileId);
 
         // Check for duplicate hub names for the same profile
         const existingHub = await db.hub.findFirst({
             where: {
                 name: validatedData.name,
-                profileId: validatedData.profileId
+                profileId: profileId
             }
         });
 
@@ -39,55 +34,27 @@ export const createHub = async (req: Request, res: Response): Promise<void> => {
         }
 
         // Generate unique invite code with retries
-        let inviteCode = '';
-        let retryCount = 0;
-
-        while (retryCount < MAX_RETRIES) {
-            inviteCode = generateInviteCode(INVITE_CODE_LENGTH);
-            const existingHubWithCode = await db.hub.findFirst({
-                where: { inviteCode }
-            });
-
-            if (!existingHubWithCode) break;
-            retryCount++;
-
-            if (retryCount === MAX_RETRIES) {
-                throw new AppError('Failed to generate unique invite code', 500);
-            }
-        }
+        let inviteCode = uuid();
 
         // Create the hub
         const newHub = await db.hub.create({
             data: {
                 name: validatedData.name,
                 imageUrl: validatedData.imageUrl ?? null, // Handle optional imageUrl
-                profileId: validatedData.profileId,
+                profileId: profileId,
                 inviteCode,
+                members: {
+                    create: [
+                        {profileId: profileId, role: MemberRole.ADMIN}
+                    ]
+                }
             },
-            include: {
-                profile: {
-                    select: {
-                        name: true,
-                        email: true
-                    }
-                },
-                members: true
-            }
-        });
-
-        // Create initial member (owner) with ADMIN role
-        await db.member.create({
-            data: {
-                profileId: validatedData.profileId,
-                hubId: newHub.id,
-                role: 'ADMIN'
-            }
         });
 
         // Log success
         logger.info(`Hub created successfully`, {
             hubId: newHub.id,
-            profileId: validatedData.profileId,
+            profileId: profileId,
             executionTime: Date.now() - startTime
         });
 
@@ -98,7 +65,7 @@ export const createHub = async (req: Request, res: Response): Promise<void> => {
             {
                 hub: newHub,
                 inviteCode,
-                owner: newHub.profile
+                owner: profileId
             }
         ).send(res);
 
