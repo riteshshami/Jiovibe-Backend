@@ -1,101 +1,79 @@
 import { Request, Response } from "express";
-import { logger } from "../../utils/logger.util";
+import { ApiError } from "../../utils/ApiError.util";
+import { ApiResponse } from "../../utils/ApiResponse.util";
+
+import { z } from "zod";
+import { db } from "../../config/db.config";
 import { addMemberSchema } from "../../interface/memberSchema.interface";
 import { userProfile } from "../../services/user-profile";
-import { AppError, AppSuccess } from "../../utils/appresponse.util";
-import { db } from "../../config/db.config";
-import { z } from "zod";
 
 export const addMember = async (req: Request, res: Response): Promise<void> => {
-    const startTime = Date.now();
-
     try {
         // Validate input data
         const validatedData = addMemberSchema.parse(req.body);
 
-        // Check if profile exist
+        // Check if profile exists
         const profileId = await userProfile(validatedData.profileId);
 
-        // Invite code
+        // Validate invite code
         const inviteCode = validatedData.inviteCode;
 
-        // Check if user is member
-        const existingMember = await db.hub.findUnique({
+        // Check if hub exists with the given invite code
+        const hub = await db.hub.findUnique({
+            where: { inviteCode },
+        });
+
+        if (!hub) {
+            throw new ApiError(404, "Hub not found");
+        }
+
+        // Check if user is already a member
+        const existingMember = await db.hub.findFirst({
             where: {
                 inviteCode,
                 members: {
-                    some: {
-                        profileId: profileId
-                    }
-                }
-            }
+                    some: { profileId },
+                },
+            },
         });
 
         if (existingMember) {
-            // Log success
-            logger.info('User already exist', {
-                inviteCode,
-                executionTime: Date.now() - startTime
-            })
-
-            // Return success response
-            new AppSuccess(
-                'Member already exist',
-                201,
-                'Existing'
-            ).send(res);
+            throw new ApiError(409, "Member already exists");
         }
 
         // Add the member
-        const hub = await db.hub.update({
-            where: {
-                inviteCode,
-            },
+        const updatedHub = await db.hub.update({
+            where: { inviteCode },
             data: {
                 members: {
                     create: {
-                        profileId: profileId
-                    }
-                }
-            }
+                        profileId,
+                    },
+                },
+            },
         });
 
-        if(!hub){
-            throw new AppError("Unable to add member to hub", 500);
+        if (!updatedHub) {
+            throw new ApiError(500, "Unable to add member to hub");
         }
 
-        // Log success
-        logger.info('User added successfully', {
-            inviteCode,
-            executionTime: Date.now() - startTime
-        })
-
         // Return success response
-        new AppSuccess(
-            'Member added successfully',
-            201,
-            'Added'
-        ).send(res);
-
+        res.status(200).json(
+            new ApiResponse(200, { message: "Member added successfully" })
+        );
     } catch (error: any) {
-        // Log error
-        logger.error('Error while adding new member', {
-            error: error.message,
-            stack: error.stack,
-            executionTime: Date.now() - startTime
-        });
-
         if (error instanceof z.ZodError) {
-            throw new AppError(
-                'Validation failed: ' + error.errors.map(e => e.message).join(', '),
-                400
+            throw new ApiError(
+                400,
+                "Validation failed: " + error.errors.map((e) => e.message).join(", ")
             );
         }
 
-        if (error instanceof AppError) {
+        if (error instanceof ApiError) {
             throw error;
         }
 
-        throw new AppError('Failed to add a new member', 500);
+        console.error("Error adding member:", error);
+        throw new ApiError(500, "Failed to add a new member");
     }
-}
+};

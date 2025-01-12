@@ -5,9 +5,7 @@ import { addMember } from "../controllers/member.controllers/add-member.controll
 
 const router = express.Router();
 
-router.use(requireAuth());
-
-router.patch("/invite-member", inviteMember);
-router.post("/add-member", addMember);
+router.route("/invite-link").patch(requireAuth(), inviteMember);
+router.route("/add-member").post(requireAuth(), addMember);
 
 export { router as memberRoutes };

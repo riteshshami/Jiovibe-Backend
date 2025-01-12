@@ -20,4 +20,8 @@ export const createProfileSchema = z.object({
         .trim(),
 });
 
-export const updateProfileSchema = createProfileSchema.partial();
+export const readProfileSchema = z.object({
+    userId: z.string()
+        .min(1, "User ID is required")
+        .trim()
+});

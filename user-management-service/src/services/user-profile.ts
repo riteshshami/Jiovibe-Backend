@@ -1,5 +1,5 @@
 import { db } from "../config/db.config";
-import { AppError } from "../utils/appresponse.util";
+import { ApiError } from "../utils/ApiError.util";
 
 export const userProfile = async (profileId: string): Promise<string> => {
     const profile = await db.profile.findUnique({
@@ -8,7 +8,7 @@ export const userProfile = async (profileId: string): Promise<string> => {
     });
 
     if (!profile) {
-        throw new AppError('Profile not found', 404);
+        throw new ApiError(404, 'Profile not found');
     }
 
     return profile.id;

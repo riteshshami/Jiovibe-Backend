@@ -1,69 +1,65 @@
 import { Request, Response } from "express";
-import { logger } from "../../utils/logger.util";
+import { ApiError } from "../../utils/ApiError.util";
+import { ApiResponse } from "../../utils/ApiResponse.util";
+
+import { z } from "zod";
+import { db } from "../../config/db.config";
 import { editHubSchema } from "../../interface/hubSchema.interface";
 import { userProfile } from "../../services/user-profile";
-import { db } from "../../config/db.config";
-import { AppError, AppSuccess } from "../../utils/appresponse.util";
-import { z } from "zod";
 
-export const updateInviteLink = async (req: Request, res: Response): Promise<void> => {
-    const startTime = Date.now();
-
+export const editHub = async (req: Request, res: Response): Promise<void> => {
     try {
         // Validate input data
         const validatedData = editHubSchema.parse(req.body);
+        const { userId, name, imageUrl } = validatedData;
 
-        // Check if profile exist
-        const profileId = await userProfile(validatedData.profileId);
+        // Get and validate hubId
+        const { hubId } = req.params;
+        if (!hubId) {
+            throw new ApiError(400, 'Hub ID is required');
+        }
 
-        // Update the server
-        const hub = db.hub.update({
+        // Ensure the user exists
+        const id = await userProfile(userId);
+
+        // Check if the hub exists and belongs to the user
+        const existingHub = await db.hub.findFirst({
             where: {
-                id: validatedData.hubId,
-                profileId: profileId
+                id: hubId,
+                profileId: id,
             },
-            data: {
-                name: validatedData.name,
-                imageUrl: validatedData.imageUrl
-            }
         });
 
-        // Log success
-        logger.info(`Hub edited successfully`, {
-            hubId: validatedData.hubId,
-            profileId: profileId,
-            executionTime: Date.now() - startTime
+        if (!existingHub) {
+            throw new ApiError(404, 'Hub not found or not authorized to edit');
+        }
+
+        // Update the hub
+        const updatedHub = await db.hub.update({
+            where: { id: hubId },
+            data: {
+                name,
+                imageUrl,
+            },
         });
 
         // Return success response
-        new AppSuccess(
-            'Hub edited successfully',
-            201,
-            {
-                hub: hub,
-                owner: profileId
-            }
-        ).send(res);
-
+        res.status(200).json(
+            new ApiResponse(200, updatedHub, "Hub edited successfully")
+        );
     } catch (error: any) {
-        // Log error
-        logger.error('Error generating new invite link', {
-        error: error.message,
-        stack: error.stack,
-        executionTime: Date.now() - startTime
-        });
-
         if (error instanceof z.ZodError) {
-            throw new AppError(
+            throw new ApiError(
+                400,
                 'Validation failed: ' + error.errors.map(e => e.message).join(', '),
-                400
             );
         }
 
-        if (error instanceof AppError) {
+        if (error instanceof ApiError) {
             throw error;
         }
 
-        throw new AppError('Failed to create a new hub', 500);
+        console.error('Error editing hub:', error);
+        throw new ApiError(500, 'Failed to edit the hub');
     }
-}
+};

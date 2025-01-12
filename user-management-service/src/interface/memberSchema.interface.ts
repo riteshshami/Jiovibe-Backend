@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 export const inviteMemberSchema = z.object({
-    hubId: z.string()
+    inviteCode: z.string()
            .min(1, "hub is required")
            .uuid("Invalid hub ID"),
     profileId: z.string()

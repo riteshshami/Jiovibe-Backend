@@ -1,7 +1,6 @@
 import { NextFunction, Request } from "express";
-import { AppError } from "../utils/appresponse.util";
-import { logger } from "../utils/logger.util";
 import { db } from "../config/db.config";
+import { ApiError } from "../utils/ApiError.util";
 
 declare module 'express' {
     interface Request {
@@ -16,8 +15,6 @@ declare module 'express' {
 }
 
 export const isMember = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    const startTime = Date.now();
-
     try {
         // Get hubId from request parameters
         const hubId = req.params.hubId;
@@ -26,11 +23,11 @@ export const isMember = async (req: Request, res: Response, next: NextFunction):
         const profileId = req.user?.profileId;
 
         if (!hubId) {
-            throw new AppError('Hub ID is required', 400);
+            throw new ApiError(400, 'Hub ID is required');
         }
 
         if (!profileId) {
-            throw new AppError('Unauthorized - No profile ID found', 401);
+            throw new ApiError(401, 'Unauthorized - No profile ID found');
         }
 
         // Check if the user is a member of the hub
@@ -48,34 +45,20 @@ export const isMember = async (req: Request, res: Response, next: NextFunction):
         });
 
         if (!member) {
-            throw new AppError('Forbidden - You are not a member of this hub', 403);
+            throw new ApiError(403, 'Forbidden - You are not a member of this hub');
         }
 
         // Attach member information to the request for use in subsequent middleware or routes
         req.member = member;
 
-        // Log success
-        logger.info('Hub membership verified', {
-            hubId,
-            profileId,
-            memberId: member.id,
-            executionTime: Date.now() - startTime
-        });
-
         next();
     } catch (error: any) {
-        // Log error
-        logger.error('Hub membership verification failed', {
-            error: error.message,
-            stack: error.stack,
-            executionTime: Date.now() - startTime
-        });
 
-        if (error instanceof AppError) {
+        if (error instanceof ApiError) {
             throw error;
         }
 
-        throw new AppError('Failed to verify hub membership', 500);
+        throw new ApiError(500, 'Failed to verify hub membership');
     }
 };
 
@@ -87,29 +70,17 @@ export const hasRole = (allowedRoles: string[]) => {
             const memberRole = req.member?.role;
 
             if (!memberRole || !allowedRoles.includes(memberRole)) {
-                throw new AppError('Forbidden - Insufficient permissions', 403);
+                throw new ApiError(403, 'Forbidden - Insufficient permissions');
             }
-
-            // Log success
-            logger.info('Role verification successful', {
-                role: memberRole,
-                executionTime: Date.now() - startTime
-            });
 
             next();
         } catch (error: any) {
-            // Log error
-            logger.error('Role verification failed', {
-                error: error.message,
-                stack: error.stack,
-                executionTime: Date.now() - startTime
-            });
 
-            if (error instanceof AppError) {
+            if (error instanceof ApiError) {
                 throw error;
             }
 
-            throw new AppError('Failed to verify role permissions', 500);
+            throw new ApiError(500, 'Failed to verify role permissions');
         }
     };
 };

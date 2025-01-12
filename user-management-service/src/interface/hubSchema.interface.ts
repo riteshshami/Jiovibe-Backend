@@ -11,8 +11,8 @@ export const createHubSchema = z.object({
         .trim()
         .optional()
         .default(""),
-    profileId: z.string()
-        .min(1, "user ID is required"),
+    userId: z.string()
+        .min(1, "User ID is required"),
 });
 
 export const editHubSchema = z.object({
@@ -26,9 +26,8 @@ export const editHubSchema = z.object({
         .trim()
         .optional()
         .default(""),
-    profileId: z.string(),
-    hubId: z.string()
-        .uuid("Invalid hub ID")
+    userId: z.string()
+        .min(1, "User ID is required"),
 });
 
 export const getHubSchema = z.object({

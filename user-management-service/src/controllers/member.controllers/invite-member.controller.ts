@@ -1,14 +1,17 @@
 import { Request, Response } from "express";
-import { logger } from "../../utils/logger.util";
-import { AppError, AppSuccess } from "../../utils/appresponse.util";
+import { ApiError } from "../../utils/ApiError.util";
+import { ApiResponse } from "../../utils/ApiResponse.util";
+
 import { z } from "zod";
-import { inviteMemberSchema } from "../../interface/memberSchema.interface";
 import { db } from "../../config/db.config";
-import { v4 as uuidv4 } from "uuid";
+import { inviteMemberSchema } from "../../interface/memberSchema.interface";
 import { userProfile } from "../../services/user-profile";
 
+import { v4 as uuidv4 } from "uuid";
+
+
 export const inviteMember = async (req: Request, res: Response): Promise<void> => {
-    const startTime = Date.now();
+
     try {
         // Validate input data
         const validatedData = inviteMemberSchema.parse(req.body);
@@ -18,62 +21,44 @@ export const inviteMember = async (req: Request, res: Response): Promise<void> =
 
         // Check if hub exists
         const existingHub = await db.hub.findUnique({
-            where: { id: validatedData.hubId }
+            where: { inviteCode: validatedData.inviteCode }
         });
 
         if (!existingHub) {
-            throw new AppError('Hub not found', 404);
+            throw new ApiError(404, 'Hub not found');
         }
 
-        // Generate unique invite code with retries
+        // Generate unique invite code
         let inviteCode = uuidv4();
 
         // Update the invite code
-        const hub = await db.hub.update({
+        await db.hub.update({
             where: {
-                id: validatedData.hubId,
-                profileId: profileId,
+                inviteCode: validatedData.inviteCode,
+                profileId,
             },
             data: {
                 inviteCode
             },
         });
 
-        // Log success
-        logger.info('Invite link created successfully', {
-            profileId: profileId,
-            inviteCode,
-            executionTime: Date.now() - startTime
-        })
-
         //  Return success response
-        new AppSuccess(
-            'Invite link created successfully',
-            201,
-            {
-                inviteCode
-            }
-        ).send(res);
-
+        res.status(201).json(
+            new ApiResponse(201, inviteCode, "Invite code updated successfully")
+        );
     } catch (error: any) {
-        // Log error
-        logger.error('Error generating invite link', {
-            error: error.message,
-            stack: error.stack,
-            executionTime: Date.now() - startTime
-        });
-
         if (error instanceof z.ZodError) {
-            throw new AppError(
+            throw new ApiError(
+                400,
                 'Validation failed: ' + error.errors.map(e => e.message).join(', '),
-                400
             );
         }
 
-        if (error instanceof AppError) {
+        if (error instanceof ApiError) {
             throw error;
         }
 
-        throw new AppError('Failed to generate a new invite link', 500);
+        console.error("Error updating link:", error);
+        throw new ApiError(500, 'Failed to generate a new invite link');
     }
 }

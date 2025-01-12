@@ -1,12 +1,11 @@
 import express from 'express';
 import { requireAuth } from '@clerk/express';
 import { createProfile } from '../controllers/user.controllers/create-user.controller';
+import { getUser } from '../controllers/user.controllers/get-user.controller';
 
 const router = express.Router();
 
-// Apply requireAuth middleware to all routes in this router
-router.use(requireAuth());
-
-router.post("/", createProfile);
+router.route("/create-profile").post(requireAuth(), createProfile);
+router.route("/user").get(requireAuth(), getUser);
 
 export { router as userRoutes };

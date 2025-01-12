@@ -1,36 +1,34 @@
 import { Request, Response } from 'express';
-import { AppError, AppSuccess } from '../../utils/appresponse.util';
+import { ApiResponse } from '../../utils/ApiResponse.util';
+import { ApiError } from '../../utils/ApiError.util';
 
 import { z } from 'zod';
 import { db } from '../../config/db.config';
-import { v4 as uuid } from 'uuid';
-import { logger } from '../../utils/logger.util';
-
 import { createHubSchema } from '../../interface/hubSchema.interface';
-
-import { MemberRole } from '@prisma/client';
 import { userProfile } from '../../services/user-profile';
 
-export const createHub = async (req: Request, res: Response): Promise<void> => {
-    const startTime = Date.now();
+import { v4 as uuid } from 'uuid';
+import { MemberRole } from '@prisma/client';
 
+export const createHub = async (req: Request, res: Response): Promise<void> => {
     try {
         // Validate input data
         const validatedData = createHubSchema.parse(req.body);
+        const { userId, name, imageUrl } = validatedData;
 
         // Check if profile exists
-        const profileId = await userProfile(validatedData.profileId);
+        const id = await userProfile(userId);
 
         // Check for duplicate hub names for the same profile
         const existingHub = await db.hub.findFirst({
             where: {
-                name: validatedData.name,
-                profileId: profileId
-            }
+                name: name,
+                profileId: id,
+            },
         });
 
         if (existingHub) {
-            throw new AppError('A hub with this name already exists for your profile', 409);
+            throw new ApiError(409, 'A hub with this name already exists for your profile');
         }
 
         // Generate unique invite code with retries
@@ -39,55 +37,28 @@ export const createHub = async (req: Request, res: Response): Promise<void> => {
         // Create the hub
         const newHub = await db.hub.create({
             data: {
-                name: validatedData.name,
-                imageUrl: validatedData.imageUrl ?? null, // Handle optional imageUrl
-                profileId: profileId,
+                name: name,
+                imageUrl: imageUrl ?? null, // Handle optional imageUrl
+                profileId: id,
                 inviteCode,
                 members: {
-                    create: [
-                        {profileId: profileId, role: MemberRole.ADMIN}
-                    ]
-                }
+                    create: [{ profileId: id, role: MemberRole.ADMIN }],
+                },
             },
         });
 
-        // Log success
-        logger.info(`Hub created successfully`, {
-            hubId: newHub.id,
-            profileId: profileId,
-            executionTime: Date.now() - startTime
-        });
-
         // Return success response
-        new AppSuccess(
-            'Hub created successfully',
-            201,
-            {
-                hub: newHub,
-                inviteCode,
-                owner: profileId
-            }
-        ).send(res);
-
+        res.status(201).json(new ApiResponse(201, newHub, 'Hub created successfully'));
     } catch (error: any) {
-        // Log error
-        logger.error('Error creating hub', {
-            error: error.message,
-            stack: error.stack,
-            executionTime: Date.now() - startTime
-        });
-
         if (error instanceof z.ZodError) {
-            throw new AppError(
-                'Validation failed: ' + error.errors.map(e => e.message).join(', '),
-                400
-            );
+            throw new ApiError(400, 'Validation failed', error.errors.map((e) => e.message));
         }
 
-        if (error instanceof AppError) {
+        if (error instanceof ApiError) {
             throw error;
         }
 
-        throw new AppError('Failed to create a new hub', 500);
+        console.error('Unknown error occurred:', error);
+        throw new ApiError(500, 'Failed to create a new hub');
     }
 };

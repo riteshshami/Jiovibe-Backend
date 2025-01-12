@@ -4,19 +4,10 @@ import cors from 'cors';
 import { requireAuth } from '@clerk/express';
 import { db } from './config/db.config';
 
-// Routes
-import { hubRoutes } from './routes/hub.route';
-import { userRoutes } from './routes/user.route';
-import { memberRoutes } from './routes/member.route';
-
-dotenv.config();
+dotenv.config({});
 
 const app = express();
-const port = process.env.PORT || 5000;
-
-// Middleware
-app.use(express.json()); // Add this line to parse JSON bodies
-app.use(express.urlencoded({ extended: true })); // Add this for parsing URL-encoded bodies
+const port = process.env.PORT || 5001;
 
 if (!process.env.CORS_ORIGIN) {
     throw new Error("CORS_ORIGIN environment variable is not set");
@@ -27,6 +18,10 @@ app.use(cors({
     credentials: true
 }));
 
+// Middleware
+app.use(express.json()); // Add this line to parse JSON bodies
+app.use(express.urlencoded({ extended: true })); // Add this for parsing URL-encoded bodies
+
 // Base routes
 app.get('/', (req: Request, res: Response) => {
     res.send('Hello World!');
@@ -35,6 +30,11 @@ app.get('/', (req: Request, res: Response) => {
 app.get('/protected', requireAuth(), (req: Request, res: Response) => {
     res.send('Protected route');
 });
+
+// Routes
+import { hubRoutes } from './routes/hub.route';
+import { userRoutes } from './routes/user.route';
+import { memberRoutes } from './routes/member.route';
 
 // API routes
 app.use('/api/hub', hubRoutes);
