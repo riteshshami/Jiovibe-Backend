@@ -1,7 +1,7 @@
 import express, { Request, Response } from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
-import { requireAuth } from '@clerk/express';
+import { clerkClient, requireAuth } from '@clerk/express';
 import { db } from './config/db.config';
 
 dotenv.config({});
@@ -11,6 +11,14 @@ const port = process.env.PORT || 5001;
 
 if (!process.env.CORS_ORIGIN) {
     throw new Error("CORS_ORIGIN environment variable is not set");
+}
+
+declare module 'express-serve-static-core' {
+    interface Request {
+      auth?: {
+        userId: string;
+      };
+    }
 }
 
 app.use(cors({
@@ -27,14 +35,17 @@ app.get('/', (req: Request, res: Response) => {
     res.send('Hello World!');
 });
 
-app.get('/protected', requireAuth(), (req: Request, res: Response) => {
-    res.send('Protected route');
-});
+app.get('/protected', requireAuth({ signInUrl: '/sign-in' }), asyncHandler(async (req: Request, res: Response) => {
+    const { userId } = req.auth!;
+    const user = await clerkClient.users.getUser(userId);
+    return res.json({ user });
+  }))
 
 // Routes
 import { hubRoutes } from './routes/hub.route';
 import { userRoutes } from './routes/user.route';
 import { memberRoutes } from './routes/member.route';
+import { asyncHandler } from './utils/asyncHandler.util';
 
 // API routes
 app.use('/api/hub', hubRoutes);

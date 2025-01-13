@@ -64,7 +64,6 @@ export const isMember = async (req: Request, res: Response, next: NextFunction):
 
 export const hasRole = (allowedRoles: string[]) => {
     return (req: Request, res: Response, next: NextFunction) => {
-        const startTime = Date.now();
 
         try {
             const memberRole = req.member?.role;
