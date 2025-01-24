@@ -4,13 +4,15 @@ import { ApiResponse } from "../../utils/ApiResponse.util";
 
 import { z } from "zod";
 import { db } from "../../config/db.config";
-import { readProfileSchema } from "../../interface/userSchema.interface";
 
 export const getUser = async (req: Request, res: Response): Promise<void> => {
     try {
+        const userId = req.params.id;
+
         // Validate input data
-        const validatedData = readProfileSchema.parse(req.body);
-        const { userId } = validatedData;
+        if (!userId || userId.trim().length === 0) {
+            throw new ApiError(400, "Invalid User ID");
+        }
 
         // Find the user in the database
         const user = await db.profile.findUnique({

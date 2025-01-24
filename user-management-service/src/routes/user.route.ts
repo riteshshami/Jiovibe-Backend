@@ -6,8 +6,8 @@ import { getAllUser } from '../controllers/user.controllers/getAll-user.controll
 
 const router = Router();
 
-router.route("/create-profile").post(requireAuth(), createProfile);
-router.route("/get-user").get(requireAuth(), getUser);
-router.route("/getAll-users").get(requireAuth(), getAllUser);
+router.route("/create-profile").post(requireAuth({ signInUrl: '/sign-in' }), createProfile);
+router.route("/get-user/:id").get(requireAuth({ signInUrl: '/sign-in' }), getUser);
+router.route("/getAll-users").get(requireAuth({ signInUrl: '/sign-in' }), getAllUser);
 
 export { router as userRoutes };

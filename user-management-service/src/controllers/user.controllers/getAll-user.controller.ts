@@ -11,7 +11,7 @@ export const getAllUser = async (req: Request, res: Response): Promise<void> => 
         const users = await db.profile.findMany();
 
         // If no users found
-        if (!users || users.length === 0) {
+        if (!users || users?.length === 0) {
             throw new ApiError(404, "No Users Found");
         }
 

@@ -14,7 +14,7 @@ export const editHub = async (req: Request, res: Response): Promise<void> => {
         const { userId, name, imageUrl } = validatedData;
 
         // Get and validate hubId
-        const { hubId } = req.params;
+        const hubId  = req.params.id;
         if (!hubId) {
             throw new ApiError(400, 'Hub ID is required');
         }
