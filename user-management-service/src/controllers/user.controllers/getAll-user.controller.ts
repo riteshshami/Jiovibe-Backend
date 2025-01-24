@@ -23,7 +23,7 @@ export const getAllUser = async (req: Request, res: Response): Promise<void> => 
             throw error;
         }
 
-        console.error("Unknown error occurred:", error); // Log unknown errors
+        console.error("Error in fetching users:", error); // Log unknown errors
         throw new ApiError(500, "Failed to fetch a user");
     }
 };

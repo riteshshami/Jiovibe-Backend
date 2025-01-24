@@ -4,8 +4,6 @@ import { ApiResponse } from "../../utils/ApiResponse.util";
 
 import { z } from "zod";
 import { db } from "../../config/db.config";
-import { editHubSchema } from "../../interface/hubSchema.interface";
-import { userProfile } from "../../services/user-profile";
 
 export const getHub = async (req: Request, res: Response): Promise<void> => {
     try {
