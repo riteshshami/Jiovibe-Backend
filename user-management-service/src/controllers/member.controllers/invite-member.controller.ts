@@ -46,6 +46,7 @@ export const inviteMember = async (req: Request, res: Response): Promise<void> =
         res.status(201).json(
             new ApiResponse(201, inviteCode, "Invite code updated successfully")
         );
+        return;
     } catch (error: any) {
         if (error instanceof z.ZodError) {
             throw new ApiError(

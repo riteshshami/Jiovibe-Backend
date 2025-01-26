@@ -8,9 +8,5 @@ export const inviteMemberSchema = z.object({
               .min(1, "user ID is required"),
 });
 
-export const addMemberSchema = z.object({
-    profileId: z.string()
-              .min(1, "user ID is required"),
-    inviteCode: z.string()
-                .uuid("Invalid invite code")
-});;
+export const addMemberSchema = inviteMemberSchema
+export const leaveHubSchema = inviteMemberSchema;

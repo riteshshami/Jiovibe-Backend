@@ -61,6 +61,7 @@ export const addMember = async (req: Request, res: Response): Promise<void> => {
         res.status(200).json(
             new ApiResponse(200, { message: "Member added successfully" })
         );
+        return;
     } catch (error: any) {
         if (error instanceof z.ZodError) {
             throw new ApiError(

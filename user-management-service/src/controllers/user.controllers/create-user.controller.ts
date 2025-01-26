@@ -33,6 +33,7 @@ export const createProfile = async (req: Request, res: Response): Promise<void> 
 
         // Return success response
         res.status(201).json(new ApiResponse(201, newUser, "User registered successfully"));
+        return;
     } catch (error: any) {
         if (error instanceof z.ZodError) {
             throw new ApiError(

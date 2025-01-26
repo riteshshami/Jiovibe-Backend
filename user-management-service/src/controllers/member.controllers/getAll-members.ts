@@ -26,7 +26,7 @@ export const getAllMembers = async (req: Request, res: Response): Promise<void> 
 
         // Return success response
         res.status(200).json(new ApiResponse(200, members, "Members Found"));
-
+        return;
     } catch (error: any) {
 
         if (error instanceof ApiError) {

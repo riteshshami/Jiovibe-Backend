@@ -26,6 +26,7 @@ export const getUser = async (req: Request, res: Response): Promise<void> => {
 
         // Return success response
         res.status(200).json(new ApiResponse(200, user, "User Found"));
+        return;
     } catch (error: any) {
         if (error instanceof z.ZodError) {
             throw new ApiError(

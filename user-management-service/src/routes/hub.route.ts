@@ -8,10 +8,10 @@ import { deleteHub } from "../controllers/hub.controllers/delete-hub.controller"
 
 const router = Router();
 
-router.route("/create-hub").post(requireAuth(), createHub);
-router.route("/edit-hub/:id").patch(requireAuth(), editHub);
-router.route("/get-hub/:id").get(requireAuth(), getHub);
-router.route("/getAll-hubs").get(requireAuth(), getAllHubs);
-router.route("/deleteHub/:id").delete(requireAuth(), deleteHub);
+router.route("/create-hub").post(requireAuth({ signInUrl: '/sign-in' }), createHub);
+router.route("/edit-hub/:id").patch(requireAuth({ signInUrl: '/sign-in' }), editHub);
+router.route("/get-hub/:id").get(requireAuth({ signInUrl: '/sign-in' }), getHub);
+router.route("/getAll-hubs").get(requireAuth({ signInUrl: '/sign-in' }), getAllHubs);
+router.route("/deleteHub/:id").delete(requireAuth({ signInUrl: '/sign-in' }), deleteHub);
 
 export { router as hubRoutes };
