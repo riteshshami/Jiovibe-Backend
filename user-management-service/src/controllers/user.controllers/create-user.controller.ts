@@ -4,7 +4,9 @@ import { ApiResponse } from "../../utils/ApiResponse.util";
 
 import { z } from 'zod';
 import { db } from "../../config/db.config";
+
 import { createProfileSchema } from "../../interface/userSchema.interface";
+import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
 
 // Create a new user profile
 export const createProfile = async (req: Request, res: Response): Promise<void> => {
@@ -12,16 +14,7 @@ export const createProfile = async (req: Request, res: Response): Promise<void> 
         // Validate input data
         const validatedData = createProfileSchema.parse(req.body);
 
-        // Check if user already exists
-        const existingUser = await db.profile.findUnique({
-            where: { id: validatedData.userId }
-        });
-
-        if (existingUser) {
-            throw new ApiError(409, 'User already exists');
-        }
-
-        // Create the user
+        // Single database call attempt
         const newUser = await db.profile.create({
             data: {
                 userId: validatedData.userId,
@@ -41,6 +34,10 @@ export const createProfile = async (req: Request, res: Response): Promise<void> 
                 'Validation failed',
                 error.errors.map(e => e.message)
             );
+        }
+
+        if(error instanceof PrismaClientKnownRequestError && error.code === 'P2002') {
+            throw new ApiError(409, 'User already exists');
         }
 
         if (error instanceof ApiError) {
