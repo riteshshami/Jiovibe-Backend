@@ -5,13 +5,18 @@ import { ApiResponse } from "../../utils/ApiResponse.util";
 import { z } from "zod";
 import { db } from "../../config/db.config";
 import { editHubSchema } from "../../interface/hubSchema.interface";
-import { userProfile } from "../../services/user-profile";
 
 export const editHub = async (req: Request, res: Response): Promise<void> => {
     try {
+        // Validate authentication
+        const userId = req.auth?.userId;
+        if (!userId) {
+            throw new ApiError(401, "Authentication required");
+        }
+
         // Validate input data
         const validatedData = editHubSchema.parse(req.body);
-        const { userId, name, imageUrl } = validatedData;
+        const { name, imageUrl } = validatedData;
 
         // Get and validate hubId
         const hubId  = req.params.id;
@@ -19,14 +24,11 @@ export const editHub = async (req: Request, res: Response): Promise<void> => {
             throw new ApiError(400, 'Hub ID is required');
         }
 
-        // Ensure the user exists
-        const id = await userProfile(userId);
-
         // Check if the hub exists and belongs to the user
         const existingHub = await db.hub.findFirst({
             where: {
                 id: hubId,
-                profileId: id,
+                profileId: userId,
             },
         });
 
@@ -36,7 +38,10 @@ export const editHub = async (req: Request, res: Response): Promise<void> => {
 
         // Update the hub
         const updatedHub = await db.hub.update({
-            where: { id: hubId },
+            where: {
+                id: hubId,
+                profileId: userId,
+            },
             data: {
                 name,
                 imageUrl,

@@ -1,9 +1,6 @@
 import { z } from 'zod';
 
 export const createProfileSchema = z.object({
-    userId: z.string()
-        .min(1, "User ID is required")
-        .trim(),
     name: z.string()
         .min(1, "Name is required")
         .max(100, "Name cannot exceed 100 characters")
@@ -18,10 +15,8 @@ export const createProfileSchema = z.object({
         .email("Invalid email address")
         .max(320, "Email is too long")
         .trim(),
-});
-
-export const readProfileSchema = z.object({
-    userId: z.string()
-        .min(1, "User ID is required")
-        .trim()
+    username: z.string()
+        .min(1, "Username is required")
+        .max(100, "Username cannot exceed 100 characters")
+        .trim(),
 });

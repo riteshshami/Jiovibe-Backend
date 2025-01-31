@@ -14,11 +14,11 @@ datasource db {
 }
 
 model Profile {
-    id String @id @default(uuid())
-    userId String @unique
+    id String @unique
     name String
     imageUrl String @db.Text
     email String @db.Text
+    username String @unique
 
     hubs Hub[]
     members Member[]

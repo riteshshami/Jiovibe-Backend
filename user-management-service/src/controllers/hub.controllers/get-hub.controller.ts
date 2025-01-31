@@ -16,7 +16,21 @@ export const getHub = async (req: Request, res: Response): Promise<void> => {
         // Find the hub in the database and include members
         const hub = await db.hub.findUnique({
             where: { id: hubId },
-            include: { members: true },
+            select: {
+                name: true,
+                imageUrl: true,
+                inviteCode: true,
+                profileId: true,
+                profile: {
+                    select: {
+                        id: true,
+                        name: true,
+                        imageUrl: true,
+                        email: true,
+                        username: true,
+                    }
+                },
+            },
         });
 
         // If hub not found

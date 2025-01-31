@@ -5,25 +5,27 @@ import { ApiError } from '../../utils/ApiError.util';
 import { z } from 'zod';
 import { db } from '../../config/db.config';
 import { createHubSchema } from '../../interface/hubSchema.interface';
-import { userProfile } from '../../services/user-profile';
 
 import { v4 as uuid } from 'uuid';
 import { MemberRole } from '@prisma/client';
 
 export const createHub = async (req: Request, res: Response): Promise<void> => {
     try {
+        // Validate authentication
+        const userId = req.auth?.userId;
+        if (!userId) {
+            throw new ApiError(401, 'Authentication required');
+        }
+
         // Validate input data
         const validatedData = createHubSchema.parse(req.body);
-        const { userId, name, imageUrl } = validatedData;
-
-        // Check if profile exists
-        const id = await userProfile(userId);
+        const { name, imageUrl } = validatedData;
 
         // Check for duplicate hub names for the same profile
         const existingHub = await db.hub.findFirst({
             where: {
                 name: name,
-                profileId: id,
+                profileId: userId,
             },
         });
 
@@ -39,10 +41,10 @@ export const createHub = async (req: Request, res: Response): Promise<void> => {
             data: {
                 name: name,
                 imageUrl: imageUrl ?? null, // Handle optional imageUrl
-                profileId: id,
+                profileId: userId,
                 inviteCode,
                 members: {
-                    create: [{ profileId: id, role: MemberRole.ADMIN }],
+                    create: [{ profileId: userId, role: MemberRole.ADMIN }],
                 },
             },
         });

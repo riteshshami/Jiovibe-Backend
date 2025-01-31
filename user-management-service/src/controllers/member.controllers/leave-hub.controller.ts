@@ -5,15 +5,17 @@ import { ApiResponse } from "../../utils/ApiResponse.util";
 import { z } from "zod";
 import { db } from "../../config/db.config";
 import { leaveHubSchema } from "../../interface/memberSchema.interface";
-import { userProfile } from "../../services/user-profile";
 
 export const leaveHub = async (req: Request, res: Response): Promise<void> => {
     try {
+        // Get profileId from request
+        const profileId = req.auth?.userId;
+        if (!profileId) {
+            throw new ApiError(401, "Unauthorized");
+        }
+
         // Validate input data
         const validatedData = leaveHubSchema.parse(req.body);
-
-        // Check if profile exists
-        const profileId = await userProfile(validatedData.profileId);
 
         // Check if hub exists
         const existingHub = await db.hub.findUnique({

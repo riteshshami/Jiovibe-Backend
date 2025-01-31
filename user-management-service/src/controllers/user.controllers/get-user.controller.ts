@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+
 import { ApiError } from "../../utils/ApiError.util";
 import { ApiResponse } from "../../utils/ApiResponse.util";
 
@@ -7,16 +8,15 @@ import { db } from "../../config/db.config";
 
 export const getUser = async (req: Request, res: Response): Promise<void> => {
     try {
-        const userId = req.params.id;
-
-        // Validate input data
-        if (!userId || userId.trim().length === 0) {
-            throw new ApiError(400, "Invalid User ID");
+        // Validate authentication
+        const userId = req.auth?.userId;
+        if (!userId) {
+            throw new ApiError(401, "Authentication required");
         }
 
         // Find the user in the database
         const user = await db.profile.findUnique({
-            where: { userId },
+            where: { id: userId },
         });
 
         // If user not found

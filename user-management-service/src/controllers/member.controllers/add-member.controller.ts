@@ -4,62 +4,77 @@ import { ApiResponse } from "../../utils/ApiResponse.util";
 
 import { z } from "zod";
 import { db } from "../../config/db.config";
+
 import { addMemberSchema } from "../../interface/memberSchema.interface";
-import { userProfile } from "../../services/user-profile";
+import { MemberRole } from "@prisma/client";
 
 export const addMember = async (req: Request, res: Response): Promise<void> => {
     try {
+        // Get profileId from request
+        const profileId = req.auth?.userId;
+        if(!profileId) {
+            throw new ApiError(401, "Unauthorized");
+        }
+
         // Validate input data
         const validatedData = addMemberSchema.parse(req.body);
 
-        // Check if profile exists
-        const profileId = await userProfile(validatedData.profileId);
-
         // Validate invite code
-        const inviteCode = validatedData.inviteCode;
+        const { inviteCode }  = validatedData;
 
-        // Check if hub exists with the given invite code
-        const hub = await db.hub.findUnique({
-            where: { inviteCode },
-        });
+         // Use transaction for atomic operations
+         const result = await db.$transaction(async (prisma) => {
+            // 1. Get hub with locking to prevent race conditions
+            const hub = await prisma.hub.findUnique({
+                where: { inviteCode },
+                select: { id: true }
+            });
 
-        if (!hub) {
-            throw new ApiError(404, "Hub not found");
-        }
+            if (!hub) {
+                throw new ApiError(404, "Hub not found");
+            }
 
-        // Check if user is already a member
-        const existingMember = await db.hub.findFirst({
-            where: {
-                inviteCode,
-                members: {
-                    some: { profileId },
+            // 2. Check existing membership atomically
+            const existingMember = await prisma.member.findFirst({
+                where: {
+                    hubId: hub.id,
+                    profileId: profileId
+                }
+            });
+
+            if (existingMember) {
+                throw new ApiError(409, "Member already exists in this hub");
+            }
+
+            // 3. Create new membership
+            return await prisma.member.create({
+                data: {
+                    hubId: hub.id,
+                    profileId: profileId,
                 },
-            },
-        });
-
-        if (existingMember) {
-            throw new ApiError(409, "Member already exists");
-        }
-
-        // Add the member
-        const updatedHub = await db.hub.update({
-            where: { inviteCode },
-            data: {
-                members: {
-                    create: {
-                        profileId,
+                select: {
+                    id: true,
+                    role: true,
+                    createdAt: true,
+                    hub: {
+                        select: {
+                            id: true,
+                            name: true
+                        }
                     },
-                },
-            },
+                    profile: {
+                        select: {
+                            id: true,
+                            username: true
+                        }
+                    }
+                }
+            });
         });
-
-        if (!updatedHub) {
-            throw new ApiError(500, "Unable to add member to hub");
-        }
 
         // Return success response
-        res.status(200).json(
-            new ApiResponse(200, { message: "Member added successfully" })
+        res.status(201).json(
+            new ApiResponse(201, result, "Member added successfully")
         );
         return;
     } catch (error: any) {

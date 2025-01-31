@@ -2,6 +2,7 @@ import express, { Request, Response } from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
 import { clerkClient, requireAuth } from '@clerk/express';
+import { rateLimit } from 'express-rate-limit';
 import { db } from './config/db.config';
 
 dotenv.config({});
@@ -29,6 +30,10 @@ app.use(cors({
 // Middleware
 app.use(express.json()); // Add this line to parse JSON bodies
 app.use(express.urlencoded({ extended: true })); // Add this for parsing URL-encoded bodies
+app.use(rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100
+})); // Rate limit requests
 
 // Base routes
 app.get('/', (req: Request, res: Response) => {
@@ -49,7 +54,7 @@ import { asyncHandler } from './utils/asyncHandler.util';
 
 // API routes
 app.use('/api/hub', hubRoutes);
-app.use('/api/member', memberRoutes);
+// app.use('/api/member', memberRoutes);
 app.use('/api/user', userRoutes);
 
 // Error handling middleware

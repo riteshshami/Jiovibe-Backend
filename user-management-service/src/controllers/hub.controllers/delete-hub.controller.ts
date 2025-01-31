@@ -6,13 +6,21 @@ import { db } from "../../config/db.config";
 
 export const deleteHub = async (req: Request, res: Response) => {
     try {
+        // Validate authentication
+        const userId = req.auth?.userId;
+        if (!userId) {
+            throw new ApiError(401, "Authentication required");
+        }
 
         // Extract the invite code from the request
         const hubId = req.params.id;
 
         // Check if hub exists with the given invite code
         const hub = await db.hub.findUnique({
-            where: { id: hubId },
+            where: {
+                id: hubId,
+                profileId: userId,
+            },
         });
 
         if (!hub) {
@@ -21,7 +29,10 @@ export const deleteHub = async (req: Request, res: Response) => {
 
         // Delete the hub
         const deletedHub = await db.hub.delete({
-            where: { id: hubId },
+            where: {
+                id: hubId,
+                profileId: userId,
+            },
         });
 
         if (!deletedHub) {
