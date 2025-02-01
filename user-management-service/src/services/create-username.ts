@@ -1,10 +1,18 @@
 import { z } from "zod";
 import { ApiError } from "../utils/ApiError.util";
+import * as sernam from "sernam"; 
 
-export const createUsername = (email: string) => {
+const options = {
+    symbols: true,
+    numbers: true,
+};
+
+export const createUsername = (firstname: string) => {
     try {
-
-    } catch (error: any) {
+        const sn = new sernam.default(options); // Ensure correct initialization
+        let username = sn.generateOne(firstname);
+        return username;
+    } catch (error) {
         if (error instanceof z.ZodError) {
             throw new ApiError(
                 400,
@@ -19,4 +27,4 @@ export const createUsername = (email: string) => {
         console.error("Error creating username:", error);
         throw new ApiError(500, "Failed to create username");
     }
-}
+};
