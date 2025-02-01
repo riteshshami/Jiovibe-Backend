@@ -54,7 +54,7 @@ import { asyncHandler } from './utils/asyncHandler.util';
 
 // API routes
 app.use('/api/hub', hubRoutes);
-// app.use('/api/member', memberRoutes);
+app.use('/api/member', memberRoutes);
 app.use('/api/user', userRoutes);
 
 // Error handling middleware

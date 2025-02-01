@@ -31,6 +31,7 @@ export const createProfile = async (req: Request, res: Response): Promise<void> 
                 throw new ApiError(409, "Profile already exists");
             }
 
+            // Create new profile
             return prisma.profile.create({
                 data: {
                     id: userId,

@@ -5,7 +5,6 @@ import { ApiResponse } from "../../utils/ApiResponse.util";
 import { z } from "zod";
 import { db } from "../../config/db.config";
 import { inviteMemberSchema } from "../../interface/memberSchema.interface";
-import { userProfile } from "../../services/user-profile";
 
 import { v4 as uuidv4 } from "uuid";
 
@@ -13,11 +12,14 @@ import { v4 as uuidv4 } from "uuid";
 export const inviteMember = async (req: Request, res: Response): Promise<void> => {
 
     try {
+        // Get profileId from request
+        const profileId = req.auth?.userId;
+        if(!profileId) {
+            throw new ApiError(401, "Unauthorized");
+        }
+
         // Validate input data
         const validatedData = inviteMemberSchema.parse(req.body);
-
-        // Check if profile exists
-        const profileId = await userProfile(validatedData.profileId);
 
         // Check if hub exists
         const existingHub = await db.hub.findUnique({

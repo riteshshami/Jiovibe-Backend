@@ -1,16 +1,29 @@
 import { z } from "zod";
 import { ApiError } from "../utils/ApiError.util";
-import * as sernam from "sernam"; 
+import * as sernam from "sernam";
+import { db } from "../config/db.config";
 
 const options = {
     symbols: true,
     numbers: true,
 };
 
-export const createUsername = (firstname: string) => {
+export const createUsername = async (firstname: string) => {
     try {
-        const sn = new sernam.default(options); // Ensure correct initialization
-        let username = sn.generateOne(firstname);
+        const sn = new sernam.default(options);
+        let username;
+        let isExist;
+
+        // Keep generating until a unique username is found
+        do {
+            username = sn.generateOne(firstname);
+            isExist = await db.profile.findFirst({
+                where: {
+                    username: username,
+                },
+            });
+        } while (isExist);
+
         return username;
     } catch (error) {
         if (error instanceof z.ZodError) {
