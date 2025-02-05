@@ -32,7 +32,7 @@ app.use(express.json()); // Add this line to parse JSON bodies
 app.use(express.urlencoded({ extended: true })); // Add this for parsing URL-encoded bodies
 app.use(rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100
+    max: 90
 })); // Rate limit requests
 
 // Base routes
