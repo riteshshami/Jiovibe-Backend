@@ -3,9 +3,7 @@ import { ApiError } from "../../utils/ApiError.util";
 import { ApiResponse } from "../../utils/ApiResponse.util";
 
 import { z } from "zod";
-import { db } from "../../config/db.config";
 import { createUsername } from "../../services/create-username";
-import { getUser } from "./get-user.controller";
 import { clerkClient } from "@clerk/express";
 
 
