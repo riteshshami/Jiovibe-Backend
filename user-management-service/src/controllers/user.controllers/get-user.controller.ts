@@ -9,10 +9,12 @@ import { db } from "../../config/db.config";
 export const getUser = async (req: Request, res: Response): Promise<void> => {
     try {
         // Validate authentication
-        const userId = req.auth?.userId;
+        const { userId } = req.auth!;
         if (!userId) {
             throw new ApiError(401, "Authentication required");
         }
+
+        console.log( userId );
 
         // Find the user in the database
         const user = await db.profile.findUnique({
